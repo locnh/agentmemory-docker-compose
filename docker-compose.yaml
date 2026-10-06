@@ -53,15 +53,18 @@ services:
       args:
         III_VERSION: "0.22.1"
     environment:
+      - VIEWER_ALLOWED_ORIGINS=amemory.enhack.net
       - VIEWER_ALLOWED_HOSTS=amemory.enhack.net
       - AGENTMEMORY_VIEWER_HOST=0.0.0.0
       - AGENTMEMORY_AUTO_COMPRESS=true
       - AGENTMEMORY_INJECT_CONTEXT=true
+      - VIEWER_ALLOWED_ORIGINS=/data-export
       #- AGENTMEMORY_LLM_NOTHINK=1
       - AGENTMEMORY_DROP_STALE_INDEX=true
       - AGENTMEMORY_SLOTS=true
       - CONSOLIDATION_ENABLED=true
       - GRAPH_EXTRACTION_ENABLED=true
+      - MAX_OBS_PER_SESSION=1000
       # Built from main branch specifically for this (see Dockerfile comment);
       # not available in the published 0.9.29 npm release.
       - AGENTMEMORY_STATE_BACKEND=redis
@@ -72,12 +75,12 @@ services:
       - OPENAI_MODEL=${OPENAI_MODEL}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL}
       - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS}
-      - MAX_OBS_PER_SESSION=${MAX_OBS_PER_SESSION}
     ports:
       - "3111:3111"
       - "3113:3113"
     volumes:
       - ./data:/data
+      - ./data-export:/data-export
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3111/agentmemory/livez || exit 1"]
       interval: 30s

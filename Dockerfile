@@ -8,12 +8,12 @@
 # Re-check `npm view @agentmemory/agentmemory versions` periodically; once a
 # release ships these features, switch back to the npm-install path used
 # before this change (see git history of this file).
-ARG AGENTMEMORY_SOURCE_COMMIT=c51bf3f294a423294deb050513a9741eff42fe8e
+ARG AGENTMEMORY_SOURCE_COMMIT=v0.9.30
 ARG III_VERSION=0.22.1
 
 FROM iiidev/iii:${III_VERSION} AS iii-image
 
-FROM node:22-trixie-slim AS builder
+FROM node:26-trixie AS builder
 
 ARG AGENTMEMORY_SOURCE_COMMIT
 ARG III_VERSION
@@ -21,15 +21,6 @@ ARG III_VERSION
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
-
-# node:22-trixie-slim bundles npm 10.9.8, whose Arborist dependency resolver
-# throws "Cannot read properties of null (reading 'edgesOut')" on this
-# repo's (lockfile-less) dependency tree. npm 11.19.0 resolves it fine —
-# verified by reproducing the failure in this exact base image and fixing
-# it with this one upgrade, nothing else changed. Re-check if a future
-# agentmemory commit ships a package-lock.json; a lockfile would make this
-# upgrade unnecessary.
-RUN npm install -g npm@11.19.0
 
 WORKDIR /build
 RUN git clone https://github.com/rohitg00/agentmemory.git . \
@@ -44,7 +35,7 @@ RUN npm install --no-fund --no-audit \
  && npm run build \
  && npm prune --omit=dev --omit=optional
 
-FROM node:22-trixie-slim
+FROM node:26-trixie
 
 ARG III_VERSION
 
