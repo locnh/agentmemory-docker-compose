@@ -1,13 +1,57 @@
 services:
+  dragonfly:
+    container_name: agentmemory-dragonfly
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1
+    # ulimits + command flags per DragonflyDB's own compose example
+    # (https://github.com/dragonflydb/dragonfly/blob/main/contrib/docker-compose/docker-compose.yml):
+    # memlock disabled, unlimited nofile; dragonfly needs this for io_uring.
+    #
+    # Persistence flags (https://www.dragonflydb.io/docs/managing-dragonfly/backups):
+    #   --dir           without this, dbfilename's default has nowhere to
+    #                   write and /data stays empty even on a clean shutdown
+    #                   (verified: /data was empty after the first run).
+    #   --dbfilename    omit the {timestamp} macro — fixed name so the next
+    #                   boot's automatic-load step finds exactly one file
+    #                   instead of picking among several timestamped ones.
+    #   --snapshot_cron every 15 min, independent of shutdown. Dragonfly
+    #                   auto-saves on a CLEAN shutdown (SIGTERM) regardless,
+    #                   but has no AOF (confirmed: "Currently, Dragonfly does
+    #                   not support AOF" in their own docs) — an unclean
+    #                   exit (OOM-kill, crash, kill -9) loses everything
+    #                   since the last snapshot. Cron bounds that window to
+    #                   15 minutes instead of "since container creation".
+    ulimits:
+      memlock: -1
+    command:
+      - "--logtostderr"
+      - "--dir=/data"
+      - "--dbfilename=agentmemory"
+      - "--snapshot_cron=*/15 * * * *"
+    volumes:
+      - ./data-dragonfly:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "PING"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
   agentmemory:
     container_name: agentmemory
+    depends_on:
+      dragonfly:
+        condition: service_healthy
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        AGENTMEMORY_VERSION: "0.9.29"
-        III_VERSION: "0.11.2"
-        III_SDK_VERSION: "0.11.2"
+        III_VERSION: "0.22.1"
     environment:
       - VIEWER_ALLOWED_HOSTS=amemory.enhack.net
       - AGENTMEMORY_VIEWER_HOST=0.0.0.0
@@ -18,12 +62,17 @@ services:
       - AGENTMEMORY_SLOTS=true
       - CONSOLIDATION_ENABLED=true
       - GRAPH_EXTRACTION_ENABLED=true
+      # Built from main branch specifically for this (see Dockerfile comment);
+      # not available in the published 0.9.29 npm release.
+      - AGENTMEMORY_STATE_BACKEND=redis
+      - AGENTMEMORY_REDIS_URL=redis://dragonfly:6379
       # .env mapping
       - OPENAI_BASE_URL=${OPENAI_BASE_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
       - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL}
       - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS}
+      - MAX_OBS_PER_SESSION=${MAX_OBS_PER_SESSION}
     ports:
       - "3111:3111"
       - "3113:3113"
