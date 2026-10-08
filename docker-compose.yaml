@@ -1,25 +1,7 @@
 services:
   dragonfly:
     container_name: agentmemory-dragonfly
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.27.1
-    # ulimits + command flags per DragonflyDB's own compose example
-    # (https://github.com/dragonflydb/dragonfly/blob/main/contrib/docker-compose/docker-compose.yml):
-    # memlock disabled, unlimited nofile; dragonfly needs this for io_uring.
-    #
-    # Persistence flags (https://www.dragonflydb.io/docs/managing-dragonfly/backups):
-    #   --dir           without this, dbfilename's default has nowhere to
-    #                   write and /data stays empty even on a clean shutdown
-    #                   (verified: /data was empty after the first run).
-    #   --dbfilename    omit the {timestamp} macro — fixed name so the next
-    #                   boot's automatic-load step finds exactly one file
-    #                   instead of picking among several timestamped ones.
-    #   --snapshot_cron every 15 min, independent of shutdown. Dragonfly
-    #                   auto-saves on a CLEAN shutdown (SIGTERM) regardless,
-    #                   but has no AOF (confirmed: "Currently, Dragonfly does
-    #                   not support AOF" in their own docs) — an unclean
-    #                   exit (OOM-kill, crash, kill -9) loses everything
-    #                   since the last snapshot. Cron bounds that window to
-    #                   15 minutes instead of "since container creation".
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v2.0.2
     ulimits:
       memlock: -1
     command:
@@ -65,8 +47,6 @@ services:
       - CONSOLIDATION_ENABLED=true
       - GRAPH_EXTRACTION_ENABLED=true
       - MAX_OBS_PER_SESSION=1000
-      # Built from main branch specifically for this (see Dockerfile comment);
-      # not available in the published 0.9.29 npm release.
       - AGENTMEMORY_STATE_BACKEND=redis
       - AGENTMEMORY_REDIS_URL=redis://dragonfly:6379
       # .env mapping
