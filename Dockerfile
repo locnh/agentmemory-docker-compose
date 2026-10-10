@@ -1,13 +1,3 @@
-# Built from the agentmemory `main` branch source (not yet published to npm)
-# to get AGENTMEMORY_STATE_BACKEND=redis + AGENTMEMORY_GRAPH_COMPACT_ON_BOOT,
-# neither of which exist in the latest published package (0.9.29, verified via
-# `npm pack` on 2026-10-05 — grep of dist/*.mjs found no trace of either).
-# Pinned to a specific commit, not `main` HEAD, so rebuilds are reproducible
-# and don't silently pick up unrelated upstream changes.
-#
-# Re-check `npm view @agentmemory/agentmemory versions` periodically; once a
-# release ships these features, switch back to the npm-install path used
-# before this change (see git history of this file).
 ARG AGENTMEMORY_SOURCE_COMMIT=v0.9.30
 ARG III_VERSION=0.22.1
 
