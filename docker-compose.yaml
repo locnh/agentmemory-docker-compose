@@ -35,8 +35,8 @@ services:
       args:
         III_VERSION: "0.22.1"
     environment:
-      VIEWER_ALLOWED_ORIGINS: amemory.enhack.net
-      VIEWER_ALLOWED_HOSTS: amemory.enhack.net
+      VIEWER_ALLOWED_ORIGINS: ${VIEWER_ALLOWED_ORIGINS}
+      VIEWER_ALLOWED_HOSTS: ${VIEWER_ALLOWED_HOSTS}
       AGENTMEMORY_VIEWER_HOST: 0.0.0.0
       AGENTMEMORY_AUTO_COMPRESS: true
       AGENTMEMORY_INJECT_CONTEXT: true
